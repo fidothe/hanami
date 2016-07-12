@@ -40,4 +40,13 @@ describe 'Middleware stack' do
 
     response.status.must_equal 404
   end
+
+  it 'returns a response body set by the middleware through for non-200 statuses' do
+    get '/legacy'
+
+    response.status.must_equal 404
+    response.body.must_equal 'legacy URL 404'
+
+    response.headers['X-Legacy-404'].must_equal 'true'
+  end
 end

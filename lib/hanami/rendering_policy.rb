@@ -33,7 +33,7 @@ module Hanami
 
     private
     def _render(env, response)
-      if action = renderable?(env)
+      if action = renderable?(env, response)
         _render_action(action, response) ||
           _render_status_page(action, response)
       end
@@ -51,8 +51,16 @@ module Hanami
       end
     end
 
-    def renderable?(env)
+    def renderable?(env, response)
+      !has_response_body?(response) && has_hanami_action?(env)
+    end
+
+    def has_hanami_action?(env)
       ((action = env.delete(HANAMI_ACTION)) && action.renderable?) and action
+    end
+
+    def has_response_body?(response)
+      response[BODY].respond_to?(:empty?) && !response[BODY].empty?
     end
 
     def render_status_page?(action, response)
@@ -60,7 +68,7 @@ module Hanami
     end
 
     def view_for(action, response)
-      view = if response[BODY].respond_to?(:empty?) && response[BODY].empty?
+      view = unless has_response_body?(response)
         captures = @controller_pattern.match(action.class.name)
         Utils::Class.load(@view_pattern % { controller: captures[:controller], action: captures[:action] }, @namespace)
       end
