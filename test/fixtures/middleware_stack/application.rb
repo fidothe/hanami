@@ -3,6 +3,7 @@ module MiddlewareStack
     configure do
       # Test lazy loading with relative class name
       middleware.use 'Middlewares::Runtime'
+      middleware.use 'Middlewares::Legacy404'
 
       # Test lazy loading with absolute class name and arguments
       middleware.use 'MiddlewareStack::Middlewares::Custom', 'OK'
@@ -42,6 +43,27 @@ module MiddlewareStack
       def call(env)
         status, headers, body = @app.call(env)
         headers['X-Custom']   = @value
+
+        [status, headers, body]
+      end
+    end
+
+    class Legacy404
+      def initialize(app)
+        @app = app
+      end
+
+      def call(env)
+        status, headers, body = @app.call(env)
+
+        if status == 404
+          req = Rack::Request.new(env)
+          if req.path == '/legacy'
+            headers['X-Legacy-404'] = 'true'
+            body = 'legacy URL 404'
+            return [status, headers, [body]]
+          end
+        end
 
         [status, headers, body]
       end
